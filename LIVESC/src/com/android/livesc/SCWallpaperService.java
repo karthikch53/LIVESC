@@ -31,6 +31,19 @@ public class SCWallpaperService extends WallpaperService
 
 	StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 	String retString = "";
+	String NO_DATA = "Please choose a match.";
+	String NO_CONNECTIVITY = "Oouch.! No Data connectivity.";
+	String LINE_SEPERATOR = "----------------";
+	
+	 @Override
+	    public void onCreate() {
+	        super.onCreate();
+	    }
+	 
+	 @Override
+	    public void onDestroy() {
+	        super.onDestroy();
+	    }
 	
 	@Override
 	public Engine onCreateEngine() {
@@ -38,8 +51,9 @@ public class SCWallpaperService extends WallpaperService
 		return new SCWallpaperEngine();
 	}
 	
-	private class SCWallpaperEngine extends Engine
+	class SCWallpaperEngine extends Engine
 	{
+		private final Paint mPaint = new Paint();
 		private boolean mVisible = false;
 		private final Handler mHandler = new Handler();
 		private final Runnable mUpdateDisplay = new Runnable() {
@@ -49,6 +63,27 @@ public class SCWallpaperService extends WallpaperService
 		{
 			draw();
 		}};
+		
+		SCWallpaperEngine() 
+		{
+	            final Paint paint = mPaint;
+	            paint.setTextSize(24);
+	            paint.setAntiAlias(true);
+	            paint.setColor(Color.BLACK);
+
+	     }
+		@Override
+        public void onCreate(SurfaceHolder surfaceHolder) {
+            super.onCreate(surfaceHolder);
+        }
+		
+		@Override
+		public void onDestroy() 
+		{
+			super.onDestroy();
+			mVisible = false;
+			mHandler.removeCallbacks(mUpdateDisplay);
+		}
 		
 		@Override
 		public void onVisibilityChanged(boolean visible) 
@@ -63,23 +98,24 @@ public class SCWallpaperService extends WallpaperService
 				mHandler.removeCallbacks(mUpdateDisplay);
 			}
 		}
+		
+		
+		@Override
+        public void onSurfaceCreated(SurfaceHolder holder) {
+            super.onSurfaceCreated(holder);
+        }
+		
 		@Override
 		public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) 
 		{
+			super.onSurfaceCreated(holder);
 			draw();
 		}
+		
 		@Override
 		public void onSurfaceDestroyed(SurfaceHolder holder) 
 		{
 			super.onSurfaceDestroyed(holder);
-			mVisible = false;
-			mHandler.removeCallbacks(mUpdateDisplay);
-		}
-		
-		@Override
-		public void onDestroy() 
-		{
-			super.onDestroy();
 			mVisible = false;
 			mHandler.removeCallbacks(mUpdateDisplay);
 		}
@@ -90,26 +126,25 @@ public class SCWallpaperService extends WallpaperService
 			String selectedMatch = prefs.getString("list_preference", "no_match");
 			int refreshInterval = Integer.parseInt(prefs.getString("refresh_interval", "5000"));
 			Canvas c = null;
-			SurfaceHolder holder = getSurfaceHolder();
+			final SurfaceHolder holder = getSurfaceHolder();
 			try
 			{
 				if(!isOnline())
 				{
-					Paint p = new Paint();
-					p.setTextSize(24);
-					p.setAntiAlias(true);
-					p.setColor(Color.BLACK);
+//					Paint p = new Paint();
+//					p.setTextSize(24);
+//					p.setAntiAlias(true);
+//					p.setColor(Color.BLACK);
 					c = holder.lockCanvas();
 					if(c!=null)
 					{
-						String noConn = "Oouch.! No connectivity";
-						c.drawRect(0, 0, c.getWidth(), c.getHeight(), p);
-						float w = p.measureText(noConn, 0, noConn.length());
+						c.drawRect(0, 0, c.getWidth(), c.getHeight(), mPaint);
+						float w = mPaint.measureText(NO_CONNECTIVITY, 0, NO_CONNECTIVITY.length());
 						int offset = (int) w / 2;
-						p.setColor(Color.WHITE);
+						mPaint.setColor(Color.WHITE);
 						int x = c.getWidth()/2 - offset;
 						int y = c.getHeight()/2;
-						c.drawText(noConn, x, y, p);
+						c.drawText(NO_CONNECTIVITY, x, y, mPaint);
 					}
 				}
 				else
@@ -121,7 +156,7 @@ public class SCWallpaperService extends WallpaperService
 						p.setTextSize(14);
 						p.setAntiAlias(true);
 						p.setColor(Color.BLACK);
-						c.drawRect(0, 0, c.getWidth(), c.getHeight(), p);
+						c.drawRect(0, 0, c.getWidth(), c.getHeight(), mPaint);
 						p.setColor(Color.WHITE);
 						
 						String refreshedTime = "Time: " + appendZero(Calendar.getInstance().getTime().getHours()) + ":" +appendZero(Calendar.getInstance().getTime().getMinutes()) + ":" + appendZero(Calendar.getInstance().getTime().getSeconds()) ;
@@ -129,7 +164,7 @@ public class SCWallpaperService extends WallpaperService
 						int y = c.getHeight()/3;
 						c.drawText(refreshedTime, x, y, p);
 						y += 20;
-						c.drawText("----------------", x, y, p);
+						c.drawText(LINE_SEPERATOR, x, y, p);
 						String str = getScore(selectedMatch);
 						if(null!=str && !str.equals(""))
 						{
@@ -143,33 +178,44 @@ public class SCWallpaperService extends WallpaperService
 								}
 								if(null!=data[1] && !data[1].equals(""))
 								{
-									String[] details = data[1].split(" ");
-									if(null!=details && details.length>0)
+									String batScore = "";
+									String bowlScore = "";
+									int lastAsteriskIndex = -1;
+									if(data[1].contains("*"))
 									{
-										for(int i=0;i<details.length;i++)
+										lastAsteriskIndex = data[1].lastIndexOf("*");
+										if(lastAsteriskIndex != -1)
 										{
-											y += 20;
-											c.drawText(details[i], x, y, p);
+											batScore = data[1].substring(0,lastAsteriskIndex).trim();
+											bowlScore = data[1].substring(lastAsteriskIndex+1, data[1].length() ).trim();
 										}
+										y += 20;
+										c.drawText(batScore, x, y, p);
+										y += 20;
+										c.drawText(bowlScore, x, y, p);
 									}
 									else
 									{
 										y += 20;
-										c.drawText("No score data", x, y, p);
+										c.drawText(data[1], x, y, p);
 									}
-									c.drawText(data[1], x, y, p);
 								}
 								if(null!=data[2] && !data[2].equals(""))
 								{
 									y += 20;
-									c.drawText(data[2], x, y, p);
+									Paint p1 = new Paint();
+									p1.setTextSize(12);
+									p1.setAntiAlias(true);
+									p1.setColor(Color.BLACK);
+									p1.setColor(Color.WHITE);
+									c.drawText(data[2], x, y, p1);
 								}
 								
 							}
 						}
 						else
 						{
-							c.drawText("No Data", x, y+80, p);
+							c.drawText(NO_DATA, x, y+80, p);
 						}
 					}
 			}
