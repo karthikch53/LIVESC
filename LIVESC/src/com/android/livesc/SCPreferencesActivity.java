@@ -23,7 +23,6 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
 import android.util.Log;
-import android.view.Menu;
 
 public class SCPreferencesActivity extends PreferenceActivity 
 {
@@ -69,19 +68,25 @@ public class SCPreferencesActivity extends PreferenceActivity
 					 }
 					 
 				 }
-				
+				 if(null!=entryList && entryList.length>0)
+				 {
+					 listPref.setEnabled(true);
+				 }
 			}
 		}
-		catch (ClientProtocolException e) 
+		catch (ClientProtocolException e)
 		{
+			Log.d("ClientProtocolException in createPreferenceScreen -" , e.getMessage());
 			listPref.setEnabled(false);
 		}
 		catch (IOException e) 
 		{
+			Log.d("IOException in createPreferenceScreen -" , e.getMessage());
 			listPref.setEnabled(false);
 		} 
 		catch(Exception e)
 		{
+			Log.d("Exception in createPreferenceScreen -" , e.getMessage());
 			listPref.setEnabled(false);
 		}
 		
@@ -128,7 +133,6 @@ public class SCPreferencesActivity extends PreferenceActivity
 		});
         
         refreshTime.setTitle(R.string.refresh_interval);
-        
         dialogBasedPrefCat.addPreference(refreshTime);
         dialogBasedPrefCat.addPreference(listPref);
         return root;
@@ -159,7 +163,7 @@ public class SCPreferencesActivity extends PreferenceActivity
 		}
 		catch(IOException e)
 		{
-			
+			Log.d("IO Exception in convertStreamToString - ", e.getMessage());
 		}
 		finally 
 		{
@@ -169,7 +173,7 @@ public class SCPreferencesActivity extends PreferenceActivity
 			}
 			catch (IOException e) 
 			{
-				e.printStackTrace();
+				Log.d("IO Exception in convertStreamToString/finally - ", e.getMessage());
 			}
 		}
 		Log.i("JSON Data", sb.toString());

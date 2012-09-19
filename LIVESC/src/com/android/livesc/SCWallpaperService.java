@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.ConnectException;
 import java.util.Calendar;
 
 import org.apache.http.HttpEntity;
@@ -36,7 +35,7 @@ public class SCWallpaperService extends WallpaperService
 	String NO_DATA = "Please choose a match.";
 	String NO_CONNECTIVITY = "Oouch.! No Data connectivity.";
 	String CHECK_DATA_WIFI_SETTINGS = "Please check your Data/Wifi settings.";
-	String LINE_SEPERATOR = "----------------";
+	String LINE_SEPERATOR = "-------------------";
 	
 	
 	 @Override
@@ -70,16 +69,8 @@ public class SCWallpaperService extends WallpaperService
 			}
 			catch(Exception ex)
 			{
-				if(ex instanceof ConnectException)
-				{
-					Toast toast = Toast.makeText(getApplicationContext(), NO_CONNECTIVITY, Toast.LENGTH_LONG);
-					toast.show();
-				}
-				else
-				{
-					Toast toast = Toast.makeText(getApplicationContext(), "Others", Toast.LENGTH_LONG);
-					toast.show();
-				}
+				Toast toast = Toast.makeText(getApplicationContext(), NO_CONNECTIVITY + "\n" + CHECK_DATA_WIFI_SETTINGS, Toast.LENGTH_LONG);
+				toast.show();
 			}
 		}};
 		
@@ -153,7 +144,7 @@ public class SCWallpaperService extends WallpaperService
 					if(c!=null)
 					{
 						c.drawRect(0, 0, c.getWidth(), c.getHeight(), p);
-						float w = p.measureText(NO_CONNECTIVITY, 0, NO_CONNECTIVITY.length());
+						float w = p.measureText(CHECK_DATA_WIFI_SETTINGS, 0, CHECK_DATA_WIFI_SETTINGS.length());
 						int offset = (int) w / 2;
 						p.setColor(Color.WHITE);
 						int x = c.getWidth()/2 - offset;
@@ -168,7 +159,7 @@ public class SCWallpaperService extends WallpaperService
 					if (c != null) 
 					{
 						Paint p = new Paint();
-						p.setTextSize(14);
+						p.setTextSize(16);
 						p.setAntiAlias(true);
 						p.setColor(Color.BLACK);
 						c.drawRect(0, 0, c.getWidth(), c.getHeight(), p);
@@ -194,26 +185,52 @@ public class SCWallpaperService extends WallpaperService
 									}
 									if(null!=data[1] && !data[1].equals(""))
 									{
-										String[] details = data[1].split(" ");
-										if(null!=details && details.length>0)
+										String batScore = "";
+										String bowlScore = "";
+										int lastAsteriskIndex = -1;
+										if(data[1].contains("*"))
 										{
-											for(int i=0;i<details.length;i++)
+											lastAsteriskIndex = data[1].lastIndexOf("*");
+											if(lastAsteriskIndex != -1)
 											{
-												y += 20;
-												c.drawText(details[i], x, y, p);
+												batScore = data[1].substring(0,lastAsteriskIndex).trim();
+												bowlScore = data[1].substring(lastAsteriskIndex+1, data[1].length() ).trim();
 											}
+											y += 20;
+											c.drawText(batScore, x, y, p);
+											y += 20;
+											c.drawText(bowlScore, x, y, p);
 										}
 										else
 										{
 											y += 20;
-											c.drawText("No score data", x, y, p);
+											c.drawText(data[1], x, y, p);
 										}
-										c.drawText(data[1], x, y, p);
 									}
 									if(null!=data[2] && !data[2].equals(""))
 									{
 										y += 20;
-										c.drawText(data[2], x, y, p);
+										Paint p1 = new Paint();
+										p1.setTextSize(14);
+										p1.setAntiAlias(true);
+										p1.setColor(Color.WHITE);
+										String desc = data[2].toString();
+										float textWidth = p.measureText(desc, 0, desc.length());
+										if(textWidth > c.getWidth())
+										{
+											int end = (int)Math.abs(desc.length()*0.75);
+											String temp = desc.substring(0,end);
+											temp = temp + "... ";
+											c.drawText(temp, x, y, p1);
+											y += 20;
+											temp = "... " + desc.substring(end, desc.length());
+											c.drawText(temp, x, y, p1);
+										}
+										else
+										{
+											c.drawText(desc, x, y, p1);
+										}
+										
 									}
 									
 								}
@@ -225,10 +242,15 @@ public class SCWallpaperService extends WallpaperService
 						}
 						else
 						{
-							c.drawText(NO_CONNECTIVITY, x, y+80, p);
+							float w = p.measureText(CHECK_DATA_WIFI_SETTINGS, 0, CHECK_DATA_WIFI_SETTINGS.length());
+							int offset = (int) w / 2;
+							p.setColor(Color.WHITE);
+							int xPos = c.getWidth()/2 - offset;
+							int yPos = c.getHeight()/2;
+							c.drawText(NO_CONNECTIVITY, xPos, yPos, p);
+							yPos += 30;
+							c.drawText(CHECK_DATA_WIFI_SETTINGS, xPos, yPos, p);
 						}
-						
-						
 					}
 			}
 			}
@@ -236,10 +258,15 @@ public class SCWallpaperService extends WallpaperService
 			{
 				Log.i(NO_CONNECTIVITY, e.getMessage());
 				Paint p1 = new Paint();
-				p1.setTextSize(12);
-				p1.setAntiAlias(true);
+				p1.setTextSize(24);
+				float w = p1.measureText(CHECK_DATA_WIFI_SETTINGS, 0, CHECK_DATA_WIFI_SETTINGS.length());
+				int offset = (int) w / 2;
 				p1.setColor(Color.WHITE);
-				c.drawText(NO_CONNECTIVITY, c.getWidth()/3, c.getHeight()/3, p1);
+				int xPos = c.getWidth()/2 - offset;
+				int yPos = c.getHeight()/2;
+				c.drawText(NO_CONNECTIVITY, xPos, yPos, p1);
+				yPos += 30;
+				c.drawText(CHECK_DATA_WIFI_SETTINGS, xPos, yPos, p1);
 				
 			}
 			finally 
@@ -314,7 +341,7 @@ public class SCWallpaperService extends WallpaperService
 			} 
 			catch(Exception e)
 			{
-				Log.d("LIVESC:  ", e.getClass().getName() + " --  "+ 
+				Log.d("LIVESC: Exception --  ", e.getClass().getName() + " --  "+ 
 						e.getMessage());
 				throw e;
 			}
@@ -334,7 +361,7 @@ public class SCWallpaperService extends WallpaperService
 			}
 			catch(IOException e)
 			{
-				
+				Log.d("LIVESC: IOException -- ", e.getMessage());
 			}
 			finally 
 			{
