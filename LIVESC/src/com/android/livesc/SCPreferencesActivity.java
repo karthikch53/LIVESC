@@ -12,6 +12,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -21,6 +23,7 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
 import android.util.Log;
+import android.view.Menu;
 
 public class SCPreferencesActivity extends PreferenceActivity 
 {
@@ -33,6 +36,11 @@ public class SCPreferencesActivity extends PreferenceActivity
 	 
 	private PreferenceScreen createPreferenceScreen() 
 	 {
+		PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
+		PreferenceCategory dialogBasedPrefCat = new PreferenceCategory(this);
+        root.addPreference(dialogBasedPrefCat);
+		// List preference
+        ListPreference listPref = new ListPreference(this);
 		HttpClient client = new DefaultHttpClient();
 		HttpGet get = new HttpGet("http://live-scorecard.appspot.com/getAllMatches");
 		HttpResponse response;
@@ -66,17 +74,17 @@ public class SCPreferencesActivity extends PreferenceActivity
 		}
 		catch (ClientProtocolException e) 
 		{
-			e.printStackTrace();
+			listPref.setEnabled(false);
 		}
 		catch (IOException e) 
 		{
-			e.printStackTrace();
+			listPref.setEnabled(false);
 		} 
-		PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
-		PreferenceCategory dialogBasedPrefCat = new PreferenceCategory(this);
-        root.addPreference(dialogBasedPrefCat);
-		// List preference
-        ListPreference listPref = new ListPreference(this);
+		catch(Exception e)
+		{
+			listPref.setEnabled(false);
+		}
+		
         listPref.setEntries(entryList);
         listPref.setEntryValues(entryValueList);
         listPref.setDialogTitle(R.string.choose_match);
@@ -125,6 +133,18 @@ public class SCPreferencesActivity extends PreferenceActivity
         dialogBasedPrefCat.addPreference(listPref);
         return root;
 	 }
+	
+	
+	public boolean isOnline() 
+	{
+	    ConnectivityManager cm =
+	        (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+	    return cm.getActiveNetworkInfo() != null && 
+	       cm.getActiveNetworkInfo().isConnectedOrConnecting();
+	}
+	
+
 	public static String convertStreamToString(InputStream is) 
 	{
 		BufferedReader reader = new BufferedReader(new InputStreamReader(is));

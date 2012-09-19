@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.util.Calendar;
 
 import org.apache.http.HttpEntity;
@@ -25,12 +26,28 @@ import android.preference.PreferenceManager;
 import android.service.wallpaper.WallpaperService;
 import android.util.Log;
 import android.view.SurfaceHolder;
+import android.widget.Toast;
 
 public class SCWallpaperService extends WallpaperService 
 {
 
 	StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 	String retString = "";
+	String NO_DATA = "Please choose a match.";
+	String NO_CONNECTIVITY = "Oouch.! No Data connectivity.";
+	String CHECK_DATA_WIFI_SETTINGS = "Please check your Data/Wifi settings.";
+	String LINE_SEPERATOR = "----------------";
+	
+	
+	 @Override
+	    public void onCreate() {
+	        super.onCreate();
+	    }
+	 
+	 @Override
+	    public void onDestroy() {
+	        super.onDestroy();
+	    }
 	
 	@Override
 	public Engine onCreateEngine() {
@@ -47,8 +64,32 @@ public class SCWallpaperService extends WallpaperService
 		@Override
 		public void run() 
 		{
-			draw();
+			try
+			{
+				draw();
+			}
+			catch(Exception ex)
+			{
+				if(ex instanceof ConnectException)
+				{
+					Toast toast = Toast.makeText(getApplicationContext(), NO_CONNECTIVITY, Toast.LENGTH_LONG);
+					toast.show();
+				}
+				else
+				{
+					Toast toast = Toast.makeText(getApplicationContext(), "Others", Toast.LENGTH_LONG);
+					toast.show();
+				}
+			}
 		}};
+		
+		@Override
+        public void onCreate(SurfaceHolder surfaceHolder) {
+            super.onCreate(surfaceHolder);
+        }
+		
+		
+		
 		
 		@Override
 		public void onVisibilityChanged(boolean visible) 
@@ -63,11 +104,20 @@ public class SCWallpaperService extends WallpaperService
 				mHandler.removeCallbacks(mUpdateDisplay);
 			}
 		}
+		
+		@Override
+        public void onSurfaceCreated(SurfaceHolder holder) {
+            super.onSurfaceCreated(holder);
+        }
+		
 		@Override
 		public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) 
 		{
+			super.onSurfaceCreated(holder);
 			draw();
 		}
+		
+		
 		@Override
 		public void onSurfaceDestroyed(SurfaceHolder holder) 
 		{
@@ -102,14 +152,14 @@ public class SCWallpaperService extends WallpaperService
 					c = holder.lockCanvas();
 					if(c!=null)
 					{
-						String noConn = "Oouch.! No connectivity";
 						c.drawRect(0, 0, c.getWidth(), c.getHeight(), p);
-						float w = p.measureText(noConn, 0, noConn.length());
+						float w = p.measureText(NO_CONNECTIVITY, 0, NO_CONNECTIVITY.length());
 						int offset = (int) w / 2;
 						p.setColor(Color.WHITE);
 						int x = c.getWidth()/2 - offset;
 						int y = c.getHeight()/2;
-						c.drawText(noConn, x, y, p);
+						c.drawText(NO_CONNECTIVITY, x, y, p);
+						c.drawText(CHECK_DATA_WIFI_SETTINGS, x, y+30, p);
 					}
 				}
 				else
@@ -123,56 +173,74 @@ public class SCWallpaperService extends WallpaperService
 						p.setColor(Color.BLACK);
 						c.drawRect(0, 0, c.getWidth(), c.getHeight(), p);
 						p.setColor(Color.WHITE);
-						
 						String refreshedTime = "Time: " + appendZero(Calendar.getInstance().getTime().getHours()) + ":" +appendZero(Calendar.getInstance().getTime().getMinutes()) + ":" + appendZero(Calendar.getInstance().getTime().getSeconds()) ;
 						int x = 40;
 						int y = c.getHeight()/3;
 						c.drawText(refreshedTime, x, y, p);
 						y += 20;
-						c.drawText("----------------", x, y, p);
-						String str = getScore(selectedMatch);
-						if(null!=str && !str.equals(""))
+						c.drawText(LINE_SEPERATOR, x, y, p);
+						if(isOnline())
 						{
-							String[] data = str.split("\\|");
-							if(null!=data && data.length>0)
+							String str = getScore(selectedMatch);
+							if(null!=str && !str.equals(""))
 							{
-								if(null!=data[0] && !data[0].equals(""))
+								String[] data = str.split("\\|");
+								if(null!=data && data.length>0)
 								{
-									y += 40;
-									c.drawText(data[0], x, y, p);
-								}
-								if(null!=data[1] && !data[1].equals(""))
-								{
-									String[] details = data[1].split(" ");
-									if(null!=details && details.length>0)
+									if(null!=data[0] && !data[0].equals(""))
 									{
-										for(int i=0;i<details.length;i++)
+										y += 40;
+										c.drawText(data[0], x, y, p);
+									}
+									if(null!=data[1] && !data[1].equals(""))
+									{
+										String[] details = data[1].split(" ");
+										if(null!=details && details.length>0)
+										{
+											for(int i=0;i<details.length;i++)
+											{
+												y += 20;
+												c.drawText(details[i], x, y, p);
+											}
+										}
+										else
 										{
 											y += 20;
-											c.drawText(details[i], x, y, p);
+											c.drawText("No score data", x, y, p);
 										}
+										c.drawText(data[1], x, y, p);
 									}
-									else
+									if(null!=data[2] && !data[2].equals(""))
 									{
 										y += 20;
-										c.drawText("No score data", x, y, p);
+										c.drawText(data[2], x, y, p);
 									}
-									c.drawText(data[1], x, y, p);
+									
 								}
-								if(null!=data[2] && !data[2].equals(""))
-								{
-									y += 20;
-									c.drawText(data[2], x, y, p);
-								}
-								
+							}
+							else
+							{
+								c.drawText(NO_DATA, x, y+80, p);
 							}
 						}
 						else
 						{
-							c.drawText("No Data", x, y+80, p);
+							c.drawText(NO_CONNECTIVITY, x, y+80, p);
 						}
+						
+						
 					}
 			}
+			}
+			catch(Exception e)
+			{
+				Log.i(NO_CONNECTIVITY, e.getMessage());
+				Paint p1 = new Paint();
+				p1.setTextSize(12);
+				p1.setAntiAlias(true);
+				p1.setColor(Color.WHITE);
+				c.drawText(NO_CONNECTIVITY, c.getWidth()/3, c.getHeight()/3, p1);
+				
 			}
 			finally 
 			{
@@ -210,7 +278,7 @@ public class SCWallpaperService extends WallpaperService
 		       cm.getActiveNetworkInfo().isConnectedOrConnecting();
 		}
 		
-		public String getScore(String selectedMatch)
+		public String getScore(String selectedMatch) throws Exception
 		{
 			HttpClient client = new DefaultHttpClient();
 			String url = "http://live-scorecard.appspot.com/getMatchDetail?matchName="+selectedMatch;
@@ -236,12 +304,20 @@ public class SCWallpaperService extends WallpaperService
 			}
 			catch (ClientProtocolException e) 
 			{
-				e.printStackTrace();
+				Log.d("LIVESC: ClientProtocolException -- ", e.getMessage());
+				throw e;
 			}
 			catch (IOException e) 
 			{
-				e.printStackTrace();
+				Log.d("LIVESC: IOException -- ", e.getMessage());
+				throw e;
 			} 
+			catch(Exception e)
+			{
+				Log.d("LIVESC:  ", e.getClass().getName() + " --  "+ 
+						e.getMessage());
+				throw e;
+			}
 			return returnString;
 		}
 		public String convertStreamToString(InputStream is) 
@@ -268,7 +344,7 @@ public class SCWallpaperService extends WallpaperService
 				}
 				catch (IOException e) 
 				{
-					e.printStackTrace();
+					Log.d("LIVESC: IOException -- ", e.getMessage());
 				}
 			}
 			Log.i("JSON Data", sb.toString());
