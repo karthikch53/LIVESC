@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.util.Calendar;
 
 import org.apache.http.HttpEntity;
@@ -25,6 +26,7 @@ import android.preference.PreferenceManager;
 import android.service.wallpaper.WallpaperService;
 import android.util.Log;
 import android.view.SurfaceHolder;
+import android.widget.Toast;
 
 public class SCWallpaperService extends WallpaperService 
 {
@@ -33,7 +35,8 @@ public class SCWallpaperService extends WallpaperService
 	String retString = "";
 	String NO_DATA = "Please choose a match.";
 	String NO_CONNECTIVITY = "Oouch.! No Data connectivity.";
-	String LINE_SEPERATOR = "----------------";
+	String CHECK_DATA_WIFI_SETTINGS = "Please check your Data/Wifi settings.";
+	String LINE_SEPERATOR = "------------------";
 	
 	 @Override
 	    public void onCreate() {
@@ -53,7 +56,6 @@ public class SCWallpaperService extends WallpaperService
 	
 	class SCWallpaperEngine extends Engine
 	{
-		private final Paint mPaint = new Paint();
 		private boolean mVisible = false;
 		private final Handler mHandler = new Handler();
 		private final Runnable mUpdateDisplay = new Runnable() {
@@ -61,17 +63,27 @@ public class SCWallpaperService extends WallpaperService
 		@Override
 		public void run() 
 		{
-			draw();
+			try
+			{
+				draw();
+			}
+			catch(Exception e)
+			{
+				if(e instanceof ConnectException)
+				{
+					Toast toast = Toast.makeText(getApplicationContext(), NO_CONNECTIVITY, Toast.LENGTH_LONG);
+					toast.show();
+				}
+				else
+				{
+					Toast toast = Toast.makeText(getApplicationContext(), "Others", Toast.LENGTH_LONG);
+					toast.show();
+				}
+			}
+			
 		}};
 		
-		SCWallpaperEngine() 
-		{
-	            final Paint paint = mPaint;
-	            paint.setTextSize(24);
-	            paint.setAntiAlias(true);
-	            paint.setColor(Color.BLACK);
-
-	     }
+		
 		@Override
         public void onCreate(SurfaceHolder surfaceHolder) {
             super.onCreate(surfaceHolder);
@@ -126,25 +138,29 @@ public class SCWallpaperService extends WallpaperService
 			String selectedMatch = prefs.getString("list_preference", "no_match");
 			int refreshInterval = Integer.parseInt(prefs.getString("refresh_interval", "5000"));
 			Canvas c = null;
+			int x=0,y=0;
 			final SurfaceHolder holder = getSurfaceHolder();
 			try
 			{
 				if(!isOnline())
 				{
-//					Paint p = new Paint();
-//					p.setTextSize(24);
-//					p.setAntiAlias(true);
-//					p.setColor(Color.BLACK);
 					c = holder.lockCanvas();
 					if(c!=null)
 					{
-						c.drawRect(0, 0, c.getWidth(), c.getHeight(), mPaint);
-						float w = mPaint.measureText(NO_CONNECTIVITY, 0, NO_CONNECTIVITY.length());
+						Paint p = new Paint();
+						p.setTextSize(14);
+						p.setAntiAlias(true);
+						p.setColor(Color.BLACK);
+						c.drawRect(0, 0, c.getWidth(), c.getHeight(), p);
+						float w = p.measureText(NO_CONNECTIVITY, 0, NO_CONNECTIVITY.length());
 						int offset = (int) w / 2;
-						mPaint.setColor(Color.WHITE);
-						int x = c.getWidth()/2 - offset;
-						int y = c.getHeight()/2;
-						c.drawText(NO_CONNECTIVITY, x, y, mPaint);
+						p.setColor(Color.WHITE);
+						x = c.getWidth()/2 - offset;
+						y = c.getHeight()/2;
+						c.drawText(NO_CONNECTIVITY, x, y, p);
+						y += 20;
+						c.drawText(CHECK_DATA_WIFI_SETTINGS, x, y, p);
+						
 					}
 				}
 				else
@@ -156,69 +172,105 @@ public class SCWallpaperService extends WallpaperService
 						p.setTextSize(14);
 						p.setAntiAlias(true);
 						p.setColor(Color.BLACK);
-						c.drawRect(0, 0, c.getWidth(), c.getHeight(), mPaint);
+						c.drawRect(0, 0, c.getWidth(), c.getHeight(), p);
 						p.setColor(Color.WHITE);
-						
 						String refreshedTime = "Time: " + appendZero(Calendar.getInstance().getTime().getHours()) + ":" +appendZero(Calendar.getInstance().getTime().getMinutes()) + ":" + appendZero(Calendar.getInstance().getTime().getSeconds()) ;
-						int x = 40;
-						int y = c.getHeight()/3;
+						x = 40;
+						y = c.getHeight()/3;
 						c.drawText(refreshedTime, x, y, p);
 						y += 20;
 						c.drawText(LINE_SEPERATOR, x, y, p);
-						String str = getScore(selectedMatch);
-						if(null!=str && !str.equals(""))
+						if(isOnline())
 						{
-							String[] data = str.split("\\|");
-							if(null!=data && data.length>0)
+							String str = getScore(selectedMatch);
+							if(null!=str && !str.equals("") && !str.equalsIgnoreCase("null"))
 							{
-								if(null!=data[0] && !data[0].equals(""))
+								Log.i("fdf", "fdfd");
+								String[] data = str.split("\\|");
+								if(null!=data && data.length>0)
 								{
-									y += 40;
-									c.drawText(data[0], x, y, p);
-								}
-								if(null!=data[1] && !data[1].equals(""))
-								{
-									String batScore = "";
-									String bowlScore = "";
-									int lastAsteriskIndex = -1;
-									if(data[1].contains("*"))
+									if(null!=data[0] && !data[0].equals(""))
 									{
-										lastAsteriskIndex = data[1].lastIndexOf("*");
-										if(lastAsteriskIndex != -1)
+										y += 40;
+										c.drawText(data[0], x, y, p);
+									}
+									if(null!=data[1] && !data[1].equals(""))
+									{
+										String batScore = "";
+										String bowlScore = "";
+										int lastAsteriskIndex = -1;
+										if(data[1].contains("*"))
 										{
-											batScore = data[1].substring(0,lastAsteriskIndex).trim();
-											bowlScore = data[1].substring(lastAsteriskIndex+1, data[1].length() ).trim();
+											lastAsteriskIndex = data[1].lastIndexOf("*");
+											if(lastAsteriskIndex != -1)
+											{
+												batScore = data[1].substring(0,lastAsteriskIndex).trim();
+												bowlScore = data[1].substring(lastAsteriskIndex+1, data[1].length() ).trim();
+											}
+											y += 20;
+											c.drawText(batScore, x, y, p);
+											y += 20;
+											c.drawText(bowlScore, x, y, p);
 										}
-										y += 20;
-										c.drawText(batScore, x, y, p);
-										y += 20;
-										c.drawText(bowlScore, x, y, p);
+										else
+										{
+											y += 20;
+											c.drawText(data[1], x, y, p);
+										}
 									}
-									else
+									if(null!=data[2] && !data[2].equals(""))
 									{
 										y += 20;
-										c.drawText(data[1], x, y, p);
+										Paint p1 = new Paint();
+										p1.setTextSize(12);
+										p1.setAntiAlias(true);
+										p1.setColor(Color.WHITE);
+										float descWidth = p1.measureText(data[2]);
+										if(descWidth>c.getWidth())
+										{
+											int cutOff = (int)0.75*data[2].length();
+											String firstLine = data[2].substring(0, cutOff);
+											c.drawText(firstLine, x, y, p1);
+											String secondLine = data[2].substring(cutOff,data[2].length());
+											y+=20;
+											c.drawText(secondLine, x, y, p1);
+											
+										}
+										else
+										{
+											c.drawText(data[2], x, y, p1);
+										}
 									}
+									
 								}
-								if(null!=data[2] && !data[2].equals(""))
-								{
-									y += 20;
-									Paint p1 = new Paint();
-									p1.setTextSize(12);
-									p1.setAntiAlias(true);
-									p1.setColor(Color.BLACK);
-									p1.setColor(Color.WHITE);
-									c.drawText(data[2], x, y, p1);
-								}
-								
 							}
+							else
+							{
+								Log.i("ni ksdjf","kfldklfjdfkd");
+								y += 80;
+								c.drawText(NO_DATA, x, y, p);
+							}
+				
 						}
 						else
 						{
-							c.drawText(NO_DATA, x, y+80, p);
+							y+=80;
+							c.drawText(NO_CONNECTIVITY, x, y, p);
+							y += 20;
+							c.drawText(CHECK_DATA_WIFI_SETTINGS, x, y, p);
 						}
 					}
 			}
+			}
+			catch(Exception e)
+			{
+				Paint p1 = new Paint();
+				p1.setTextSize(14);
+				p1.setAntiAlias(true);
+				p1.setColor(Color.WHITE);
+				y += 20;
+				c.drawText(NO_DATA, x, y, p1);
+				
 			}
 			finally 
 			{
@@ -251,15 +303,18 @@ public class SCWallpaperService extends WallpaperService
 		{
 		    ConnectivityManager cm =
 		        (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+		    
+		    Log.i("isOnline -- ", String.valueOf(cm.getActiveNetworkInfo() != null && 
+		       cm.getActiveNetworkInfo().isConnectedOrConnecting()));
 
 		    return cm.getActiveNetworkInfo() != null && 
 		       cm.getActiveNetworkInfo().isConnectedOrConnecting();
 		}
 		
-		public String getScore(String selectedMatch)
+		public String getScore(String selectedMatch) throws Exception
 		{
 			HttpClient client = new DefaultHttpClient();
-			String url = "http://live-scorecard.appspot.com/getMatchDetail?matchName="+selectedMatch;
+			String url = "http://live-scorecard.appspot.com/matchDetail?matchName="+selectedMatch;
 			url = url.replace(" ", "%20").trim();
 			Log.i("URL: " , url);
 			HttpGet get = new HttpGet(url);
@@ -279,27 +334,39 @@ public class SCWallpaperService extends WallpaperService
 					 }
 					
 				}
+				else
+				{
+				   Log.i("status code: ", String.valueOf(response.getStatusLine().getStatusCode()))	;
+				}
 			}
 			catch (ClientProtocolException e) 
 			{
-				e.printStackTrace();
+				Log.i("LIVESC: ClientProtocolException -- ", e.getMessage());
+				throw e;
 			}
 			catch (IOException e) 
 			{
-				e.printStackTrace();
+				Log.i("LIVESC: IOException -- ", e.getMessage());
+				throw e;
 			} 
+			catch(Exception e)
+			{
+				Log.i("LIVESC:  ", e.getClass().getName() + " --  "+ 
+						e.getMessage());
+				throw e;
+			}
 			return returnString;
 		}
 		public String convertStreamToString(InputStream is) 
 		{
 			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-			StringBuilder sb = new StringBuilder();
+			String sb = "";
 			String line = null;
 			try
 			{
 				while ((line = reader.readLine()) != null) 
 				{
-					sb.append(line + "\n");
+					sb += line + "\n";
 				}
 			}
 			catch(IOException e)
@@ -317,8 +384,7 @@ public class SCWallpaperService extends WallpaperService
 					e.printStackTrace();
 				}
 			}
-			Log.i("JSON Data", sb.toString());
-			return sb.toString();
+			return sb.equals("")||sb.trim().equalsIgnoreCase("null")?null:sb;
 		}
 		
 }

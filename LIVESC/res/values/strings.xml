@@ -2,5 +2,7 @@
     <string name="app_name">Live Scorecard</string>
     <string name="choose_match">Choose a Match</string>
     <string name="choose_match1">Choose a Match</string>
-     <string name="refresh_interval">Refresh Interval</string>
+    <string name="refresh_interval">Refresh Interval</string>
+    <string name="no_data">Please choose a match.</string>
+    <string name="no_connectivity">Oouch.! No Data connectivity.</string>
 </resources>

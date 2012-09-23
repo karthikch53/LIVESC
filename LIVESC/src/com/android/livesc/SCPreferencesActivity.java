@@ -24,59 +24,71 @@ import android.util.Log;
 
 public class SCPreferencesActivity extends PreferenceActivity 
 {
-	@Override
+	  final String url = "http://live-scorecard.appspot.com/matchList";
+	  @Override
 	  protected void onCreate(Bundle savedInstanceState) 
-	{
+	  {
 	    super.onCreate(savedInstanceState);
 	    setPreferenceScreen(createPreferenceScreen());
 	  }
 	 
-	private PreferenceScreen createPreferenceScreen() 
-	 {
-		HttpClient client = new DefaultHttpClient();
-		HttpGet get = new HttpGet("http://live-scorecard.appspot.com/getAllMatches");
-		HttpResponse response;
-		String[] entryList = null;
-		String[] entryValueList = null;
-		try 
-		{
-			response = client.execute(get);
-			if (response.getStatusLine().getStatusCode() == 200) 
+	  private PreferenceScreen createPreferenceScreen() 
+	  {
+			
+		    PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
+			PreferenceCategory dialogBasedPrefCat = new PreferenceCategory(this);
+	        root.addPreference(dialogBasedPrefCat);
+			// List preference
+	        ListPreference listPref = new ListPreference(this);
+		    HttpClient client = new DefaultHttpClient();
+			HttpGet get = new HttpGet(url);
+			HttpResponse response;
+			String[] entryList = null;
+			String[] entryValueList = null;
+			try 
 			{
-				HttpEntity entity = response.getEntity();
-				 if (entity != null) 
-				 {
-					 InputStream instream = entity.getContent();
-					 String result = convertStreamToString(instream);
-					 if(null!=result && !result.equals(""))
+				response = client.execute(get);
+				if (response.getStatusLine().getStatusCode() == 200) 
+				{
+					HttpEntity entity = response.getEntity();
+					 if (entity != null) 
 					 {
-						 String[] temp = result.split(",");
-						 int resultCount = temp.length;
-						 entryList = new String[resultCount];
-						 entryValueList =  new String[resultCount];
-						 for (int i = 0; i < resultCount; i++)
+						 InputStream instream = entity.getContent();
+						 String result = convertStreamToString(instream);
+						 if(null!=result && !result.equals(""))
 						 {
-					        entryList[i] = entryValueList[i] = temp[i];
+							 String[] temp = result.split(",");
+							 int resultCount = temp.length;
+							 entryList = new String[resultCount];
+							 entryValueList =  new String[resultCount];
+							 for (int i = 0; i < resultCount; i++)
+							 {
+						        entryList[i] = entryValueList[i] = temp[i];
+							 }
+							 if(!listPref.isEnabled())
+							 {
+								 listPref.setEnabled(true);
+							 }
 						 }
+						 
 					 }
-					 
-				 }
-				
-			}
+					
+				}
 		}
 		catch (ClientProtocolException e) 
 		{
-			e.printStackTrace();
+			listPref.setEnabled(false);
+			Log.d("ClientProtocolException - createPreferenceScreen: " , e.getMessage());
 		}
 		catch (IOException e) 
 		{
-			e.printStackTrace();
+			listPref.setEnabled(false);
+			Log.d("IOException - createPreferenceScreen: " , e.getMessage());
 		} 
-		PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
-		PreferenceCategory dialogBasedPrefCat = new PreferenceCategory(this);
-        root.addPreference(dialogBasedPrefCat);
-		// List preference
-        ListPreference listPref = new ListPreference(this);
+		catch(Exception e)
+		{
+			listPref.setEnabled(false);
+		}
         listPref.setEntries(entryList);
         listPref.setEntryValues(entryValueList);
         listPref.setDialogTitle(R.string.choose_match);
@@ -149,7 +161,7 @@ public class SCPreferencesActivity extends PreferenceActivity
 			}
 			catch (IOException e) 
 			{
-				e.printStackTrace();
+				Log.d("IOException - convertStreamToString: " , e.getMessage());
 			}
 		}
 		Log.i("JSON Data", sb.toString());
