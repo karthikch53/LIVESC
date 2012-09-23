@@ -20,8 +20,9 @@
 	        android:resource="@xml/wallpaper"></meta-data>
 	    </service>
 	     <activity android:label="@string/app_name" android:name=".SCPreferencesActivity"
-	      android:theme="@android:style/Theme.Light.WallpaperSettings"
+	      android:theme="@android:style/Theme.Light.WallpaperSettings" 
 	      android:exported="true">
+	      
 	    </activity>
     </application>
 
