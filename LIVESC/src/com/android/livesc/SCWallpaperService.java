@@ -152,7 +152,7 @@ public class SCWallpaperService extends WallpaperService
 						p.setAntiAlias(true);
 						p.setColor(Color.BLACK);
 						c.drawRect(0, 0, c.getWidth(), c.getHeight(), p);
-						float w = p.measureText(NO_CONNECTIVITY, 0, NO_CONNECTIVITY.length());
+						float w = p.measureText(CHECK_DATA_WIFI_SETTINGS, 0, CHECK_DATA_WIFI_SETTINGS.length());
 						int offset = (int) w / 2;
 						p.setColor(Color.WHITE);
 						x = c.getWidth()/2 - offset;
@@ -185,7 +185,6 @@ public class SCWallpaperService extends WallpaperService
 							String str = getScore(selectedMatch);
 							if(null!=str && !str.equals("") && !str.equalsIgnoreCase("null"))
 							{
-								Log.i("fdf", "fdfd");
 								String[] data = str.split("\\|");
 								if(null!=data && data.length>0)
 								{
@@ -246,7 +245,6 @@ public class SCWallpaperService extends WallpaperService
 							}
 							else
 							{
-								Log.i("ni ksdjf","kfldklfjdfkd");
 								y += 80;
 								c.drawText(NO_DATA, x, y, p);
 							}
