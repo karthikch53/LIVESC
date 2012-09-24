@@ -20,14 +20,14 @@
     
     
     <string-array name="refresh_interval">
-        <item>3 minutes</item>
+        
         <item>5 minutes</item>
         <item>7 minutes</item>
         <item>10 minutes</item>
     </string-array>
     
     <string-array name="refresh_interval_values">
-        <item>180000</item>
+        
         <item>300000</item>
         <item>420000</item>
         <item>600000</item>
