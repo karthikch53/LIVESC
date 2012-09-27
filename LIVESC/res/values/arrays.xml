@@ -17,17 +17,13 @@
         <item>4</item>
         <item>5</item>
     </string-array>
-    
-    
     <string-array name="refresh_interval">
-        
         <item>5 minutes</item>
         <item>7 minutes</item>
         <item>10 minutes</item>
     </string-array>
     
     <string-array name="refresh_interval_values">
-        
         <item>300000</item>
         <item>420000</item>
         <item>600000</item>

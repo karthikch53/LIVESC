@@ -37,6 +37,7 @@ public class SCWallpaperService extends WallpaperService
 	String NO_CONNECTIVITY = "Oouch.! No Data connectivity.";
 	String CHECK_DATA_WIFI_SETTINGS = "Please check your Data/Wifi settings.";
 	String LINE_SEPERATOR = "------------------";
+	int maxWidth = 0;
 	
 	 @Override
 	    public void onCreate() {
@@ -57,6 +58,8 @@ public class SCWallpaperService extends WallpaperService
 	class SCWallpaperEngine extends Engine
 	{
 		private boolean mVisible = false;
+		boolean hasFirstRowData = false;
+		boolean hasSecondRowData = false;
 		private final Handler mHandler = new Handler();
 		private final Runnable mUpdateDisplay = new Runnable() {
 		
@@ -145,10 +148,12 @@ public class SCWallpaperService extends WallpaperService
 				if(!isOnline())
 				{
 					c = holder.lockCanvas();
+					maxWidth = c.getWidth();
+					maxWidth = maxWidth - 20;
 					if(c!=null)
 					{
 						Paint p = new Paint();
-						p.setTextSize(14);
+						p.setTextSize(getResources().getDimension(R.dimen.textsize));
 						p.setAntiAlias(true);
 						p.setColor(Color.BLACK);
 						c.drawRect(0, 0, c.getWidth(), c.getHeight(), p);
@@ -166,16 +171,18 @@ public class SCWallpaperService extends WallpaperService
 				else
 				{
 					c = holder.lockCanvas();
+					maxWidth = c.getWidth();
+					maxWidth = maxWidth - 20;
 					if (c != null) 
 					{
 						Paint p = new Paint();
-						p.setTextSize(14);
+						p.setTextSize(getResources().getDimension(R.dimen.textsize));
 						p.setAntiAlias(true);
 						p.setColor(Color.BLACK);
 						c.drawRect(0, 0, c.getWidth(), c.getHeight(), p);
 						p.setColor(Color.WHITE);
 						String refreshedTime = "Time: " + appendZero(Calendar.getInstance().getTime().getHours()) + ":" +appendZero(Calendar.getInstance().getTime().getMinutes()) + ":" + appendZero(Calendar.getInstance().getTime().getSeconds()) ;
-						x = 40;
+						x = 20;
 						y = c.getHeight()/3;
 						c.drawText(refreshedTime, x, y, p);
 						y += 20;
@@ -185,16 +192,32 @@ public class SCWallpaperService extends WallpaperService
 							String str = getScore(selectedMatch);
 							if(null!=str && !str.equals("") && !str.equalsIgnoreCase("null"))
 							{
+								hasFirstRowData = true;
 								String[] data = str.split("\\|");
 								if(null!=data && data.length>0)
 								{
 									if(null!=data[0] && !data[0].equals(""))
 									{
-										y += 40;
-										c.drawText(data[0], x, y, p);
+										if(data[0].contains(";"))
+										{
+											String[] arr = data[0].split(";");
+											for(int i=0;i<arr.length;i++)
+											{
+												y += 30;
+												drawMultiLineText(c,arr[i].trim(), x, y, p);
+											}
+										}
+										else
+										{
+											y += 40;
+											drawMultiLineText(c,data[0], x, y, p);
+										}
+										
+										//c.drawText(data[0], x, y, p);
 									}
 									if(null!=data[1] && !data[1].equals(""))
 									{
+										hasSecondRowData = true;
 										String batScore = "";
 										String bowlScore = "";
 										int lastAsteriskIndex = -1;
@@ -206,39 +229,49 @@ public class SCWallpaperService extends WallpaperService
 												batScore = data[1].substring(0,lastAsteriskIndex).trim();
 												bowlScore = data[1].substring(lastAsteriskIndex+1, data[1].length() ).trim();
 											}
-											y += 20;
-											c.drawText(batScore, x, y, p);
-											y += 20;
-											c.drawText(bowlScore, x, y, p);
+											y += 30;
+											drawMultiLineText(c,batScore, x, y, p);
+											//c.drawText(batScore, x, y, p);
+											y += 30;
+											drawMultiLineText(c,bowlScore, x, y, p);
+											//c.drawText(bowlScore, x, y, p);
 										}
 										else
 										{
-											y += 20;
-											c.drawText(data[1], x, y, p);
+											y += 30;
+											drawMultiLineText(c,data[1], x, y, p);
+											//c.drawText(data[1], x, y, p);
 										}
 									}
 									if(null!=data[2] && !data[2].equals(""))
 									{
-										y += 20;
+										y += 30;
 										Paint p1 = new Paint();
-										p1.setTextSize(12);
+										p1.setTextSize(getResources().getDimension(R.dimen.textsize));
 										p1.setAntiAlias(true);
 										p1.setColor(Color.WHITE);
-										float descWidth = p1.measureText(data[2]);
-										if(descWidth>c.getWidth())
+										if(!hasFirstRowData || !hasSecondRowData)
 										{
-											int cutOff = (int)0.75*data[2].length();
-											String firstLine = data[2].substring(0, cutOff);
-											c.drawText(firstLine, x, y, p1);
-											String secondLine = data[2].substring(cutOff,data[2].length());
-											y+=20;
-											c.drawText(secondLine, x, y, p1);
-											
+											Log.i("No match score", "No match and players scores");
+											drawMultiLineText(c,selectedMatch, x, y, p);
+											y += 30;
 										}
-										else
-										{
-											c.drawText(data[2], x, y, p1);
-										}
+										drawMultiLineText(c,data[2], x, y, p);
+//										float descWidth = p1.measureText(data[2]);
+//										if(descWidth>c.getWidth())
+//										{
+//											int cutOff = (int)0.75*data[2].length();
+//											String firstLine = data[2].substring(0, cutOff);
+//											c.drawText(firstLine, x, y, p1);
+//											String secondLine = data[2].substring(cutOff,data[2].length());
+//											y+=20;
+//											c.drawText(secondLine, x, y, p1);
+//											
+//										}
+//										else
+//										{
+//											c.drawText(data[2], x, y, p1);
+//										}
 									}
 									
 								}
@@ -263,7 +296,7 @@ public class SCWallpaperService extends WallpaperService
 			catch(Exception e)
 			{
 				Paint p1 = new Paint();
-				p1.setTextSize(14);
+				p1.setTextSize(getResources().getDimension(R.dimen.textsize));
 				p1.setAntiAlias(true);
 				p1.setColor(Color.WHITE);
 				y += 20;
@@ -296,6 +329,35 @@ public class SCWallpaperService extends WallpaperService
 			}
 			return ret;
 		}
+		
+		private void drawMultiLineText (Canvas c,String text, float x, float y, Paint paint)
+		{
+			String firstLine = "";
+			String secondLine = "";
+			int cutOff = 0;
+			int lastWhiteSpaceIndex =0;
+			if(null!=text)
+			{
+				
+				if(paint.measureText(text) > maxWidth)
+				{
+					cutOff = (int)(0.75*text.length());
+					firstLine = text.substring(0, cutOff); 
+					lastWhiteSpaceIndex = firstLine.lastIndexOf(" ");
+					firstLine = firstLine.substring(0, lastWhiteSpaceIndex) + ".. ";
+					c.drawText(firstLine, x, y, paint);
+					y += 30;
+					secondLine = " .."+ text.substring(lastWhiteSpaceIndex,text.length());
+					c.drawText(secondLine, x, y, paint);
+				}
+				else
+				{
+					c.drawText(text, x, y, paint);
+				}
+			}
+		}
+		
+		
 		
 		public boolean isOnline() 
 		{

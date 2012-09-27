@@ -21,6 +21,7 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
 import android.util.Log;
+import android.widget.Toast;
 
 public class SCPreferencesActivity extends PreferenceActivity 
 {
@@ -119,6 +120,8 @@ public class SCPreferencesActivity extends PreferenceActivity
 			
 			@Override
 			public boolean onPreferenceChange(Preference preference, Object newValue) {
+				Toast toast = Toast.makeText(getApplicationContext(), "Your preference is saved.", Toast.LENGTH_LONG);
+				toast.show();
 				 return true;
 			}
 		});
